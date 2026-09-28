@@ -97,7 +97,9 @@ Update — это JSON-объект. Он может содержать разн
 
 Чтобы Telegram знал, что вы — это вы, каждому боту выдаётся **токен** — уникальная строка. Она работает как пароль: любой, кто её знает, может действовать от имени бота. Токен выдаёт **@BotFather** — официальный бот для управления ботами.
 
-<img width="758" height="716" alt="image" src="https://github.com/user-attachments/assets/ded2a379-2508-46ec-9f26-901061dd0c96" />
+<div align="center">
+  <img width="758" height="716" alt="image" src="https://github.com/user-attachments/assets/ded2a379-2508-46ec-9f26-901061dd0c96" />
+</div>
 
 В токене зашита вся информация о боте: его ID и секретный ключ для подписи запросов. Формат токена: `<bot_id>:<secret>`, например:
 
