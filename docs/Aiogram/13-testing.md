@@ -386,6 +386,7 @@ FSM требует `FSMContext`. Его тоже можно создать вр�
 ```python
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.storage.base import StorageKey
 
 async def test_registration_flow():
     storage = MemoryStorage()
