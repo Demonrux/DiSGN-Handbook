@@ -299,7 +299,7 @@ def events_list(events) -> InlineKeyboardMarkup:
 def event_confirm(event_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="✅ Подтвердить", callback_data=f"confirm:{event_id}")
-    builder.button(text="❌ Отмена", callbackdata="cancel")
+    builder.button(text="❌ Отмена", callback_data="cancel")
     builder.adjust(2)
     return builder.as_markup()
 
