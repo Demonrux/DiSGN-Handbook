@@ -17,7 +17,7 @@
 Схематично это выглядит так:
 
 <div align="center">
-    <img width="1271" height="715" alt="image" src="https://github.com/user-attachments/assets/2d667d0e-55ee-4a0d-b036-edfdd3535bd2" />
+    <img width="100%" height="700" alt="image" src="https://github.com/user-attachments/assets/2d667d0e-55ee-4a0d-b036-edfdd3535bd2" />
 </div>
 
 
