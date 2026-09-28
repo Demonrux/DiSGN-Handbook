@@ -256,14 +256,19 @@ class RegistrationRepository:
         self.db = db
 
     async def register(self, user_id: int, event_id: int) -> bool:
+        """
+        Возвращает True, если запись создана.
+        False — если пользователь уже записан (UniqueViolation).
+        Остальные ошибки (FK, соединение) пробрасываются наверх.
+        """
         try:
             await self.db.execute(
                 "INSERT INTO registrations (user_id, event_id) VALUES ($1, $2)",
                 user_id, event_id,
             )
             return True
-        except Exception:
-            return False  # уже записан
+        except asyncpg.UniqueViolationError:
+            return False
 
     async def for_user(self, user_id: int):
         return await self.db.fetch(
@@ -486,10 +491,16 @@ async def on_register(callback: CallbackQuery, events):
     await callback.answer()
 
 
+from asyncpg import ForeignKeyViolationError
+
 @router.callback_query(F.data.startswith("confirm:"))
 async def on_confirm(callback: CallbackQuery, registrations):
     event_id = int(callback.data.split(":")[1])
-    success = await registrations.register(callback.from_user.id, event_id)
+    try:
+        success = await registrations.register(callback.from_user.id, event_id)
+    except ForeignKeyViolationError:
+        await callback.answer("Мероприятие не найдено", show_alert=True)
+        return
 
     if success:
         await callback.message.edit_text("✅ Ты записан! Напомню за день до мероприятия.")
@@ -634,13 +645,27 @@ async def process_title(message: Message, state: FSMContext):
     await state.set_state(EventCreation.waiting_date)
 
 
+from zoneinfo import ZoneInfo
+from config import settings
+
+TZ = ZoneInfo(settings.timezone)
+
 @router.message(EventCreation.waiting_date)
 async def process_date(message: Message, state: FSMContext):
     try:
-        dt = datetime.strptime(message.text.strip(), "%d.%m.%Y %H:%M")
+        naive = datetime.strptime(message.text.strip(), "%d.%m.%Y %H:%M")
     except ValueError:
         await message.answer("Неверный формат. Попробуй ещё раз: 15.10.2026 18:00")
         return
+
+    # Привязываем к таймзоне проекта — иначе Postgres интерпретирует
+    # время в таймзоне сессии, и получатся сюрпризы.
+    dt = naive.replace(tzinfo=TZ)
+
+    if dt <= datetime.now(TZ):
+        await message.answer("Дата уже прошла. Укажи будущую дату.")
+        return
+
     await state.update_data(event_date=dt)
     await message.answer("Место проведения:")
     await state.set_state(EventCreation.waiting_location)
