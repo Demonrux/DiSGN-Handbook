@@ -292,13 +292,17 @@ async def webhook(request: Request):
 import hashlib
 import hmac
 
+
 def check_telegram_auth(data: dict, bot_token: str) -> bool:
-    received_hash = data.pop("hash", None)
+    received_hash = data.get("hash")
     if not received_hash:
         return False
 
+    # Не мутируем входной словарь: копируем без 'hash'
+    payload = {k: v for k, v in data.items() if k != "hash"}
+
     data_check_string = "\n".join(
-        f"{k}={v}" for k, v in sorted(data.items())
+        f"{k}={v}" for k, v in sorted(payload.items())
     )
     secret_key = hashlib.sha256(bot_token.encode()).digest()
     computed_hash = hmac.new(
