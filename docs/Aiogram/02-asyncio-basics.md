@@ -9,7 +9,7 @@
 ## Event loop
 
 <div align="center">
-    <img width="500" height="300" alt="image" src="https://github.com/user-attachments/assets/df09753f-160e-4d5b-85ff-c99f32b376e0" />
+    <img width="400" height="240" alt="image" src="https://github.com/user-attachments/assets/df09753f-160e-4d5b-85ff-c99f32b376e0" />
 </div>
 
 В основе всего — **event loop** (цикл событий). Это бесконечный цикл, который следит за задачами и решает, какую из них запустить прямо сейчас. Когда задача встречает `await`, она говорит event loop'у: «Я жду результата, займись чем-нибудь другим». Loop переключается на другую задачу. Когда результат готов — возвращается к первой.
