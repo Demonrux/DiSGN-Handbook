@@ -45,6 +45,10 @@ class PostgresHandler:
     async def connect(self):
         self.pool = await asyncpg.create_pool(self.dsn)
 
+    async def close(self):
+        if self.pool:
+            await self.pool.close()
+
     async def execute(self, query: str, *args):
         async with self.pool.acquire() as conn:
             return await conn.execute(query, *args)
@@ -56,7 +60,13 @@ class PostgresHandler:
     async def fetchrow(self, query: str, *args):
         async with self.pool.acquire() as conn:
             return await conn.fetchrow(query, *args)
+
+    async def fetchval(self, query: str, *args):
+        async with self.pool.acquire() as conn:
+            return await conn.fetchval(query, *args)
 ```
+
+**Возвращаемое значение execute()**. В отличие от fetch, execute возвращает не строки, а строку-статус вида "INSERT 0 1" или "UPDATE 3". Если нужно получить вставленную строку или id — используйте fetchrow/fetchval с RETURNING. В EventRepository.create() показан именно этот приём.
 
 `create_pool` создаёт пул соединений. `pool.acquire()` берёт одно соединение на время запроса и возвращает его обратно. Такой подход выдерживает нагрузку без постоянного открытия новых соединений.
 
