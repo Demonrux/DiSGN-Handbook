@@ -272,8 +272,6 @@ async def process_email(message: Message, state: FSMContext):
     # ...
 ```
 
-## Совет
-
 Для отладки FSM удобно логировать текущее состояние в каждом хендлере:
 
 ```python
