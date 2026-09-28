@@ -227,6 +227,8 @@ CMD ["python", "aiogram_run.py"]
 services:
   bot:
     build: .
+    volumes:
+      - ./logs:/app/logs
     restart: always
     env_file: .env
     depends_on:
@@ -288,7 +290,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 handler = RotatingFileHandler(
-    "bot.log",
+    "/app/logs/bot.log",
     maxBytes=10 * 1024 * 1024,  # 10 МБ
     backupCount=5,
     encoding="utf-8",
@@ -301,6 +303,17 @@ logging.basicConfig(level=logging.INFO, handlers=[handler])
 ```
 
 `RotatingFileHandler` сам создаёт новый файл при достижении лимита и удаляет старые. Иначе `bot.log` вырастет до гигабайтов и забьёт диск.
+
+*Два важных момента про логи в проде.**
+
+Первый — добавьте файл логов в `.gitignore`. Иначе после `git pull` на сервере
+`bot.log` попадёт в diff, а при неаккуратном коммите — в репозиторий:
+
+```gitignore
+bot.log
+bot.log.*
+*.log
+```
 
 ## Мониторинг
 
