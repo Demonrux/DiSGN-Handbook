@@ -177,6 +177,7 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+**Важно**: этот вызов удаляет установленный webhook, если он был. Если ваш бот работает через webhook, вызывать delete_webhook() при старте нельзя — иначе Telegram перестанет присылать вам обновления. Для webhook-режима вместо delete_webhook используйте set_webhook(..., drop_pending_updates=True).
 
 Разберём ключевые моменты:
 
