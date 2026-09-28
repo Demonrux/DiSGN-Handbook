@@ -1,4 +1,7 @@
-# <img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/0aadcaff-e2d8-4b83-b7d5-5f2d0af6eed7" /> Руководство по Telegram-ботам на aiogram
+<div align="center">
+  <img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/0aadcaff-e2d8-4b83-b7d5-5f2d0af6eed7" />
+</div>
+#  Руководство по Telegram-ботам на aiogram
 
 Полный курс по созданию Telegram-ботов на Python с использованием aiogram. Материал построен так, чтобы сначала объяснить теорию, а потом показать, как она применяется на практике.
 
