@@ -63,15 +63,24 @@ run:
 Для Vercel нужен webhook вместо polling. Создайте файл `api/webhook.py` с FastAPI:
 
 ```python
-from fastapi import FastAPI, Request
+import os
+from fastapi import FastAPI, Request, HTTPException
 from aiogram import Bot, Dispatcher
 
 app = FastAPI()
-bot = Bot(token="...")
+
+# На Vercel переменные окружения задаются в дашборде проекта.
+# Локально их подхватывает .env — но в проде .env нет.
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+SECRET_TOKEN = os.environ["WEBHOOK_SECRET"]
+
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 @app.post("/webhook")
 async def webhook(request: Request):
+    if request.headers.get("X-Telegram-Bot-Api-Secret-Token") != SECRET_TOKEN:
+        raise HTTPException(status_code=403)
     update = await request.json()
     await dp.feed_raw_update(bot, update)
     return {"ok": True}
