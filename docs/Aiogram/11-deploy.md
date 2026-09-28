@@ -227,8 +227,6 @@ CMD ["python", "aiogram_run.py"]
 services:
   bot:
     build: .
-    volumes:
-      - ./logs:/app/logs
     restart: always
     env_file: .env
     depends_on:
@@ -290,7 +288,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 handler = RotatingFileHandler(
-    "/app/logs/bot.log",
+    "bot.log",
     maxBytes=10 * 1024 * 1024,  # 10 МБ
     backupCount=5,
     encoding="utf-8",
@@ -304,7 +302,7 @@ logging.basicConfig(level=logging.INFO, handlers=[handler])
 
 `RotatingFileHandler` сам создаёт новый файл при достижении лимита и удаляет старые. Иначе `bot.log` вырастет до гигабайтов и забьёт диск.
 
-*Два важных момента про логи в проде.**
+**Два важных момента про логи в проде.**
 
 Первый — добавьте файл логов в `.gitignore`. Иначе после `git pull` на сервере
 `bot.log` попадёт в diff, а при неаккуратном коммите — в репозиторий:
@@ -314,6 +312,21 @@ bot.log
 bot.log.*
 *.log
 ```
+
+Второй — **в Docker логи в файл теряются при рестарте контейнера**, если файл
+не лежит на смонтированном volume. Либо примонтируйте директорию:
+
+```yaml
+services:
+  bot:
+    build: .
+    volumes:
+      - ./logs:/app/logs
+```
+
+И в `RotatingFileHandler` пишите в `/app/logs/bot.log`, а не в `bot.log`.
+Либо не заморачивайтесь с файлами и пишите в stdout — Docker и systemd
+сами соберут логи (`docker logs`, `journalctl`).
 
 ## Мониторинг
 
