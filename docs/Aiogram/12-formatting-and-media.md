@@ -250,7 +250,7 @@ from aiogram.types import ReactionTypeEmoji
 await bot.set_message_reaction(
     chat_id=message.chat.id,
     message_id=message.message_id,
-    reaction=[ReactionTypeEmoji(emoji="👍")],
+    reaction=[ReactionTypeEmoji(type="emoji", emoji="👍")],
 )
 ```
 
