@@ -69,7 +69,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram import Bot
 
 async def send_reminder(bot: Bot, chat_id: int):
-    await bot.send_message(chat_id=chat_id, text="⏰ Напоминание!")
+    await bot.send_message(chat_id=chat_id, text="Напоминание!")
 
 async def main():
     # ... создание bot, dp ...
