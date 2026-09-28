@@ -191,6 +191,9 @@ class UserRepository:
             "SELECT EXISTS(SELECT 1 FROM users WHERE telegram_id = $1)",
             telegram_id,
         )
+
+    async def count(self) -> int:
+        return await self.db.fetchval("SELECT COUNT(*) FROM users")
 ```
 
 ```python
@@ -209,6 +212,10 @@ class EventRepository:
             """,
             limit,
         )
+```
+ **Замечание про напоминания.** Метод `upcoming()` использует `NOW()` — то есть событие, начавшееся минуту назад, уже не покажется в списке. Напоминания же ищут события в интервале «завтра от 00:00 до 23:59». Если событие начнётся сегодня в 23:50, оно попадёт в `upcoming()`, но в напоминания — нет. Это осознанное решение: напоминаем только за сутки. Если хотите покрыть и вечерние события, расширьте интервал в `send_reminders` до `timedelta(hours=36)`.
+ 
+ ```python
 
     async def get(self, event_id: int):
         return await self.db.fetchrow(
@@ -216,7 +223,7 @@ class EventRepository:
             event_id,
         )
 
-    async def create(self, title: str, description: str, event_date, location: str, created_by: int):
+     async def create(self, title: str, description: str, event_date, location: str, created_by: int):
         return await self.db.fetchval(
             """
             INSERT INTO events (title, description, event_date, location, created_by)
@@ -224,6 +231,18 @@ class EventRepository:
             RETURNING id
             """,
             title, description, event_date, location, created_by,
+        )
+
+    async def between(self, start, end):
+        """Мероприятия в интервале дат — для планировщика напоминаний."""
+        return await self.db.fetch(
+            """
+            SELECT id, title, event_date, location
+            FROM events
+            WHERE event_date BETWEEN $1 AND $2
+            ORDER BY event_date
+            """,
+            start, end,
         )
 ```
 
@@ -255,11 +274,18 @@ class RegistrationRepository:
             user_id,
         )
 
-    async def count_for_event(self, event_id: int) -> int:
+     async def count_for_event(self, event_id: int) -> int:
         return await self.db.fetchval(
             "SELECT COUNT(*) FROM registrations WHERE event_id = $1",
             event_id,
         )
+
+    async def user_ids_for_event(self, event_id: int) -> list[int]:
+        rows = await self.db.fetch(
+            "SELECT user_id FROM registrations WHERE event_id = $1",
+            event_id,
+        )
+        return [r["user_id"] for r in rows]
 ```
 
 ## Шаг 4. Клавиатуры
@@ -619,12 +645,20 @@ async def process_date(message: Message, state: FSMContext):
 
 @router.message(EventCreation.waiting_location)
 async def process_location(message: Message, state: FSMContext, events):
+    location = message.text.strip()
+    if len(location) > 200:
+        await message.answer("Слишком длинное название места. Максимум 200 символов.")
+        return
+    if len(location) < 2:
+        await message.answer("Слишком коротко. Укажи место проведения.")
+        return
+
     data = await state.get_data()
     event_id = await events.create(
         title=data["title"],
         description="",
         event_date=data["event_date"],
-        location=message.text.strip(),
+        location=location,
         created_by=message.from_user.id,
     )
     await state.clear()
@@ -633,7 +667,7 @@ async def process_location(message: Message, state: FSMContext, events):
 
 @router.message(Command("stats"))
 async def cmd_stats(message: Message, users, events):
-    users_count = await users.count() if hasattr(users, "count") else "—"
+    users_count = await users.count()
     upcoming = await events.upcoming(limit=100)
     await message.answer(
         f"<b>Статистика</b>\n\n"
@@ -654,19 +688,33 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
+from repositories.events import EventRepository
+from repositories.registrations import RegistrationRepository
+
+
 async def send_reminders(bot, db):
     """Отправляет напоминания за день до мероприятия."""
     tomorrow_start = datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)
     tomorrow_end = tomorrow_start + timedelta(days=1)
 
-    events = await db.fetch(
-        """
-        SELECT id, title, event_date, location
-        FROM events
-        WHERE event_date BETWEEN $1 AND $2
-        """,
-        tomorrow_start, tomorrow_end,
-    )
+    events_repo = EventRepository(db)
+    reg_repo = RegistrationRepository(db)
+
+    upcoming = await events_repo.between(tomorrow_start, tomorrow_end)
+
+    for event in upcoming:
+        user_ids = await reg_repo.user_ids_for_event(event["id"])
+        date_str = event["event_date"].strftime("%H:%M")
+        text = (
+            f"🔔 Напоминание!\n\n"
+            f"Завтра в {date_str} — <b>{event['title']}</b>\n"
+            f"📍 {event['location'] or '—'}"
+        )
+        for uid in user_ids:
+            try:
+                await bot.send_message(uid, text)
+            except Exception as e:
+                logging.warning(f"Не удалось отправить {uid}: {e}")
 
     for event in events:
         users = await db.fetch(
