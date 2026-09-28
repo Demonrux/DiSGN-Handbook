@@ -273,7 +273,7 @@ docker compose up -d
 ```env
 BOT_TOKEN=123456:REPLACE_ME
 DATABASE_URL=postgresql://user:pass@localhost/db
-ADMIN_IDS=123,456
+ADMIN_IDS=[123,456]
 REDIS_URL=redis://localhost:6379/0
 ```
 
