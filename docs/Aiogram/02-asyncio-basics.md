@@ -1,6 +1,6 @@
 # 2. Асинхронность и asyncio
 
-<div algin="center" >
+<div align="center" >
     <img width="610" height="254" alt="image" src="https://github.com/user-attachments/assets/dc3c9b0c-10ea-4388-9b45-eeafda4c2f48" />
 </div>
 
