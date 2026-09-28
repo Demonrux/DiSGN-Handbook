@@ -57,3 +57,10 @@
     — Inline-режим, Mini Apps, платежи, локализация, микросервисы.
 16. [Собираем своего бота](16-building-bot.md)
     — Практическая где мы создадим своего бота для регистраций, используя все прошлые знания.
+
+## Полезные ссылки
+
+- [Документация aiogram](https://docs.aiogram.dev/)
+- [Примеры aiogram на GitHub](https://github.com/aiogram/aiogram/tree/dev-3.x/examples)
+- [Telegram Bot API](https://core.telegram.org/bots/api)
+- [Awesome aiogram](https://github.com/aiogram/awesome-aiogram)
