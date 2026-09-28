@@ -115,7 +115,7 @@ settings = Settings()
 ```env
 BOT_TOKEN=123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw
 DATABASE_URL=postgresql://bot:secret@localhost:5432/studentbot
-ADMIN_IDS=123456789,987654321
+ADMIN_IDS=[123456789,987654321]
 REDIS_URL=redis://localhost:6379/0
 ```
 
