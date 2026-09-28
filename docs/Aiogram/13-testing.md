@@ -288,6 +288,97 @@ async def test_user_registered(bot, dp, make_update):
 
 `feed_raw_update` принимает дополнительные kwargs — они попадут в `data` и будут доступны в хендлере. Это тот же механизм, что и с мидлварями.
 
+## Тестирование мидлварей
+
+Мидлвари — отдельный слой, который можно тестировать в изоляции. Но интереснее
+проверить, что мидлварь **действительно вклинивается** в цепочку обработки.
+Для этого подключаем её к `Dispatcher` и подаём Update через `feed_raw_update`.
+
+### Проверка, что мидлварь кладёт данные
+
+```python
+from aiogram import BaseMiddleware
+
+class FakeRepo:
+    async def get(self, user_id):
+        return {"id": user_id, "full_name": "Иван"}
+
+class UserMiddleware(BaseMiddleware):
+    async def __call__(self, handler, event, data):
+        data["user"] = await FakeRepo().get(event.from_user.id)
+        return await handler(event, data)
+
+async def test_middleware_injects_user(bot, make_update):
+    dp = Dispatcher()
+    dp.message.outer_middleware(UserMiddleware())
+
+    @dp.message(F.text == "/me")
+    async def me_handler(message, user):
+        return user["full_name"]
+
+    result = await dp.feed_raw_update(bot=bot, update=make_update("/me"))
+    assert result == "Иван"
+```
+
+Если мидлварь не сработает — хендлер упадёт с `TypeError` о недостающем
+аргументе `user`. Тест поймает это сразу.
+
+### Проверка, что мидлварь отсекает событие
+
+```python
+class AlwaysBlockMiddleware(BaseMiddleware):
+    async def __call__(self, handler, event, data):
+        return None  # не вызываем handler
+
+async def test_middleware_blocks(bot, make_update):
+    dp = Dispatcher()
+    dp.message.outer_middleware(AlwaysBlockMiddleware())
+
+    @dp.message(F.text == "/secret")
+    async def secret_handler(message):
+        return "should not happen"
+
+    result = await dp.feed_raw_update(bot=bot, update=make_update("/secret"))
+    assert result is None
+```
+
+`feed_raw_update` вернёт `None`, потому что хендлер не вызвался. Это
+и есть проверяемое поведение: мидлварь действительно прервала цепочку.
+
+### Проверка порядка мидлварей
+
+Если у вас несколько мидлварей и важно, в каком порядке они срабатывают,
+заведите список и дописывайте в него метки:
+
+```python
+calls = []
+
+class MarkerMiddleware(BaseMiddleware):
+    def __init__(self, name: str):
+        self.name = name
+
+    async def __call__(self, handler, event, data):
+        calls.append(self.name)
+        return await handler(event, data)
+
+async def test_middleware_order(bot, make_update):
+    calls.clear()
+    dp = Dispatcher()
+    dp.message.outer_middleware(MarkerMiddleware("outer"))
+    dp.message.middleware(MarkerMiddleware("inner1"))
+    dp.message.middleware(MarkerMiddleware("inner2"))
+
+    @dp.message(F.text == "ping")
+    async def ping_handler(message):
+        return "pong"
+
+    await dp.feed_raw_update(bot=bot, update=make_update("ping"))
+    assert calls == ["outer", "inner1", "inner2"]
+```
+
+Такой тест — страховка от «случайно поменяли порядок подключения при
+рефакторинге». Без него ошибка вылезет только в проде.
+
 ## Тестирование FSM
 
 FSM требует `FSMContext`. Его тоже можно создать вручную.
