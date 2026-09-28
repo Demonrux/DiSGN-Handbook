@@ -203,6 +203,13 @@ class EventRepository:
         self.db = db
 
     async def upcoming(self, limit: int = 10):
+        """
+        Ближайшие мероприятия (начиная с текущего момента).
+
+        Для напоминаний используется between(): событие, начавшееся
+        минуту назад, сюда уже не попадёт, но должно быть в интервале
+        напоминаний.
+        """
         return await self.db.fetch(
             """
             SELECT * FROM events
@@ -212,10 +219,6 @@ class EventRepository:
             """,
             limit,
         )
-```
- **Замечание про напоминания.** Метод `upcoming()` использует `NOW()` — то есть событие, начавшееся минуту назад, уже не покажется в списке. Напоминания же ищут события в интервале «завтра от 00:00 до 23:59». Если событие начнётся сегодня в 23:50, оно попадёт в `upcoming()`, но в напоминания — нет. Это осознанное решение: напоминаем только за сутки. Если хотите покрыть и вечерние события, расширьте интервал в `send_reminders` до `timedelta(hours=36)`.
- 
- ```python
 
     async def get(self, event_id: int):
         return await self.db.fetchrow(
@@ -223,7 +226,7 @@ class EventRepository:
             event_id,
         )
 
-     async def create(self, title: str, description: str, event_date, location: str, created_by: int):
+    async def create(self, title: str, description: str, event_date, location: str, created_by: int):
         return await self.db.fetchval(
             """
             INSERT INTO events (title, description, event_date, location, created_by)
@@ -687,7 +690,6 @@ from datetime import datetime, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-
 from repositories.events import EventRepository
 from repositories.registrations import RegistrationRepository
 
@@ -704,6 +706,9 @@ async def send_reminders(bot, db):
 
     for event in upcoming:
         user_ids = await reg_repo.user_ids_for_event(event["id"])
+        if not user_ids:
+            continue
+
         date_str = event["event_date"].strftime("%H:%M")
         text = (
             f"🔔 Напоминание!\n\n"
@@ -715,23 +720,6 @@ async def send_reminders(bot, db):
                 await bot.send_message(uid, text)
             except Exception as e:
                 logging.warning(f"Не удалось отправить {uid}: {e}")
-
-    for event in events:
-        users = await db.fetch(
-            "SELECT user_id FROM registrations WHERE event_id = $1",
-            event["id"],
-        )
-        date_str = event["event_date"].strftime("%H:%M")
-        text = (
-            f"🔔 Напоминание!\n\n"
-            f"Завтра в {date_str} — <b>{event['title']}</b>\n"
-            f"📍 {event['location'] or '—'}"
-        )
-        for user in users:
-            try:
-                await bot.send_message(user["user_id"], text)
-            except Exception as e:
-                logging.warning(f"Не удалось отправить {user['user_id']}: {e}")
 
 
 def setup_scheduler(bot, db) -> AsyncIOScheduler:
