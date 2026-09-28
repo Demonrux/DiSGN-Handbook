@@ -197,6 +197,56 @@ async def on_register(callback: CallbackQuery):
     await callback.answer("Записал!")
 ```
 
+### Если данных больше 64 байт
+
+Часто хочется положить в `callback_data` несколько полей — например,
+ID пользователя, ID мероприятия и действие. Если строка не влезает,
+используют один из двух приёмов.
+
+**Приём 1: короткий идентификатор.** Генерируем случайный токен,
+сохраняем все данные на сервере, в кнопке — только токен.
+
+```python
+import secrets
+
+token = secrets.token_urlsafe(8)  # ~11 символов
+await cache.set(f"cb:{token}", {"event_id": 42, "action": "register"}, ttl=3600)
+builder.button(text="Записаться", callback_data=f"cb:{token}")
+```
+
+В хендлере:
+
+```python
+@router.callback_query(F.data.startswith("cb:"))
+async def on_action(callback: CallbackQuery):
+    token = callback.data.split(":", 1)[1]
+    payload = await cache.get(f"cb:{token}")
+    if payload is None:
+        await callback.answer("Кнопка устарела", show_alert=True)
+        return
+    # payload["event_id"], payload["action"] — используем
+```
+
+Плюс: влезает что угодно. Минус: нужен кеш (Redis), данные живут ограниченное время.
+
+**Приём 2: сжатие полей.** Если все поля — числа, их можно упаковать
+в компактную строку через `base64` или просто через разделитель.
+
+```python
+import base64
+import struct
+
+# 4 байта user_id + 4 байта event_id + 1 байт action = 9 байт → ~12 в base64
+packed = base64.urlsafe_b64encode(
+    struct.pack(">IIB", user_id, event_id, action_code)
+).decode()
+builder.button(text="Записаться", callback_data=packed)
+```
+
+Это работает без внешнего хранилища, но код сложнее и требует
+аккуратной распаковки с проверкой длины. Для большинства ботов
+первый приём проще и надёжнее.
+
 ### Валидация callback_data
 
 `callback_data` — это **пользовательский ввод**. Её можно подделать или испортить. Всегда проверяйте данные перед использованием:
