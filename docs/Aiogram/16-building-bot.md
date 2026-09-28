@@ -687,16 +687,20 @@ async def cmd_stats(message: Message, users, events):
 # scheduler.py
 import logging
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from config import settings
 from repositories.events import EventRepository
 from repositories.registrations import RegistrationRepository
 
+TZ = ZoneInfo(settings.timezone)
 
 async def send_reminders(bot, db):
     """Отправляет напоминания за день до мероприятия."""
-    tomorrow_start = datetime.now().replace(hour=0, minute=0, second=0) + timedelta(days=1)
+    now = datetime.now(TZ)
+    tomorrow_start = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
     tomorrow_end = tomorrow_start + timedelta(days=1)
 
     events_repo = EventRepository(db)
@@ -723,7 +727,7 @@ async def send_reminders(bot, db):
 
 
 def setup_scheduler(bot, db) -> AsyncIOScheduler:
-    scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+    scheduler = AsyncIOScheduler(timezone=TZ)
     scheduler.add_job(
         send_reminders,
         "cron",
