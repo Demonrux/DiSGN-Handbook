@@ -277,7 +277,7 @@ class RegistrationRepository:
             user_id,
         )
 
-     async def count_for_event(self, event_id: int) -> int:
+    async def count_for_event(self, event_id: int) -> int:
         return await self.db.fetchval(
             "SELECT COUNT(*) FROM registrations WHERE event_id = $1",
             event_id,
