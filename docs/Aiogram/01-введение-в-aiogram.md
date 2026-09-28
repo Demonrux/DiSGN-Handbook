@@ -1,10 +1,10 @@
-# 🤖 Telegram-боты на aiogram: от идеи до продакшена
+# Telegram-боты на aiogram: от идеи до продакшена
 
 Практическое руководство для тех, кто хочет разобраться в современном aiogram и завести своего первого бота за один вечер. Материал рассчитан на людей, знакомых с Python, но не обязательно с асинхронностью или Telegram API.
 
 ---
 
-## 📖 Оглавление
+## Оглавление
 
 - [Введение](#введение)
 - [Создание бота через BotFather](#создание-бота-через-botfather)
@@ -47,27 +47,27 @@
 Хорошая структура экономит часы отладки и месяцы рефакторинга. Вот проверенный временем шаблон, который прошёл через десятки проектов и легко расширяется по мере роста.
 
 ```text
-📁 my_project/
-├── 📁 db_handler/
+my_project/
+├── db_handler/
 │   ├── __init__.py
 │   └── db_class.py
-├── 📁 handlers/
+├── handlers/
 │   ├── __init__.py
 │   ├── start.py
 │   └── admin.py
-├── 📁 keyboards/
+├── keyboards/
 │   ├── __init__.py
 │   └── all_keyboards.py
-├── 📁 work_time/
+├── work_time/
 │   ├── __init__.py
 │   └── time_func.py
-├── 📁 utils/
+├── utils/
 │   ├── __init__.py
 │   └── my_utils.py
-├── 📁 filters/
+├── filters/
 │   ├── __init__.py
 │   └── is_admin.py
-├── 📁 middlewares/
+├── middlewares/
 │   ├── __init__.py
 │   └── check_sub.py
 ├── .env
@@ -164,7 +164,7 @@ start_router = Router()
 
 @start_router.message(CommandStart())
 async def cmd_start(message: Message):
-    await message.answer('Привет! Я бот на aiogram 🚀')
+    await message.answer('Привет! Я бот на aiogram')
 
 @start_router.message(Command('help'))
 async def cmd_help(message: Message):
@@ -172,7 +172,7 @@ async def cmd_help(message: Message):
 
 @start_router.message(F.text == 'привет')
 async def cmd_hello(message: Message):
-    await message.answer('Привет-привет! 👋')
+    await message.answer('Привет-привет!')
 ```
 
 Подключение роутера происходит в `aiogram_run.py`:
@@ -483,8 +483,3 @@ run:
 
 ---
 
-## Что дальше
-
-Когда базовый бот запущен и работает, хочется большего. Следующие шаги — **Scenes и Wizard** для сложных многошаговых диалогов, **Inline-режим** для быстрых ответов через `@bot`, **Telegram Mini Apps** для полноценного веб-интерфейса внутри мессенджера. Для инфраструктуры — **CI/CD через GitHub Actions**, **мониторинг через Sentry**, **кэширование через Redis**.
-
-Но главное — не пытайтесь объять всё сразу. Хороший бот — это не тот, где двадцать фич, а тот, где пять работают идеально. Сначала надёжность, потом фишки. Удачи в разработке! 🚀
