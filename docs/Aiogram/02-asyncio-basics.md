@@ -10,7 +10,21 @@
 
 В основе всего — **event loop** (цикл событий). Это бесконечный цикл, который следит за задачами и решает, какую из них запустить прямо сейчас. Когда задача встречает `await`, она говорит event loop'у: «Я жду результата, займись чем-нибудь другим». Loop переключается на другую задачу. Когда результат готов — возвращается к первой.
 
-Важная деталь: event loop однопоточный. Всё выполняется в одном потоке, просто задачи чередуются. Это значит, что **если вы заблокируете поток, встанет всё**.
+Схематично это выглядит так:
+
+```
+Event loop
+    │
+    ├── Task A: [работа] → await → (пауза) ─────────────► [продолжение]
+    │                                 │
+    │                                 ▼
+    ├── Task B:                     [работа] → await → (пауза) ──────► [продолжение]
+    │                                                     │
+    │                                                     ▼
+    └── Task C:                                         [работа]
+```
+
+Важная деталь: event loop **однопоточный**. Всё выполняется в одном потоке, просто задачи чередуются. Это значит, что **если вы заблокируете поток, встанет всё**.
 
 ## async и await
 
@@ -25,3 +39,154 @@ async def say_hello():
     print("Мир")
 
 asyncio.run(say_hello())
+```
+
+`asyncio.run()` запускает event loop, выполняет корутину и закрывает loop, когда та завершится. В реальном боте `asyncio.run()` вызывается один раз — в `main()`, а внутри уже запускается polling, который крутится бесконечно.
+
+## Что блокирует event loop
+
+Главная ловушка для новичков: кажется, что если функция асинхронная, то всё хорошо. Но это не так. Если внутри корутины вызвать **синхронную** функцию, которая выполняется долго, event loop встанет.
+
+Вот что **нельзя** делать внутри хендлеров:
+
+```python
+import time
+import requests
+import psycopg2
+
+@router.message(Command("bad"))
+async def bad_handler(message: Message):
+    time.sleep(5)                      # блокирует loop на 5 секунд
+    response = requests.get("...")     # блокирует loop на время запроса
+    conn = psycopg2.connect("...")     # синхронный драйвер БД
+    heavy_computation()                # тяжёлые вычисления
+```
+
+Пока выполняются эти вызовы, **бот не отвечает никому** — ни этому пользователю, ни остальным. Внешне это выглядит как «бот завис».
+
+## Как не блокировать loop
+
+Для каждой блокирующей операции есть асинхронная альтернатива.
+
+| Блокирующий вызов | Асинхронная замена |
+|---|---|
+| `time.sleep(n)` | `await asyncio.sleep(n)` |
+| `requests.get(...)` | `await aiohttp.get(...)` или `httpx.AsyncClient` |
+| `psycopg2` | `asyncpg` или `sqlalchemy.ext.asyncio` |
+| `open(...).read()` для больших файлов | `await asyncio.to_thread(...)` |
+| Тяжёлые вычисления (PIL, ML) | `await asyncio.to_thread(...)` |
+
+`asyncio.to_thread()` запускает синхронную функцию в отдельном потоке и возвращает управление event loop'у. Это спасение для библиотек, у которых нет асинхронных версий.
+
+```python
+import asyncio
+
+def heavy_computation(data):
+    # какая-то долгая синхронная логика
+    return data * 2
+
+@router.message(Command("compute"))
+async def compute_handler(message: Message):
+    result = await asyncio.to_thread(heavy_computation, 42)
+    await message.answer(f"Результат: {result}")
+```
+
+## Параллельный запуск задач
+
+Часто нужно запустить несколько асинхронных операций одновременно. Для этого есть `asyncio.gather()`.
+
+```python
+import asyncio
+
+async def fetch_user(user_id: int) -> str:
+    await asyncio.sleep(1)  # имитация запроса к БД
+    return f"User {user_id}"
+
+async def main():
+    # Последовательно — 3 секунды
+    u1 = await fetch_user(1)
+    u2 = await fetch_user(2)
+    u3 = await fetch_user(3)
+
+    # Параллельно — 1 секунда
+    results = await asyncio.gather(
+        fetch_user(1),
+        fetch_user(2),
+        fetch_user(3),
+    )
+    print(results)  # ['User 1', 'User 2', 'User 3']
+
+asyncio.run(main())
+```
+
+`asyncio.gather()` запускает все корутины одновременно и ждёт завершения всех. Порядок результатов соответствует порядку аргументов, даже если задачи завершились в другом порядке.
+
+## Фоновые задачи
+
+Иногда нужно запустить задачу и не ждать её — например, отправить уведомление через минуту. Для этого используется `asyncio.create_task()`.
+
+```python
+import asyncio
+from aiogram import Bot, F
+from aiogram.filters import Command
+from aiogram.types import Message
+
+async def background_notification(bot: Bot, chat_id: int):
+    await asyncio.sleep(5)
+    await bot.send_message(chat_id, "Фоновое уведомление!")
+
+@router.message(Command("notify"))
+async def cmd_notify(message: Message, bot: Bot):
+    asyncio.create_task(background_notification(bot, message.chat.id))
+    await message.answer("Уведомление придёт через 5 секунд")
+```
+
+Пользователь сразу получает ответ, а фоновая задача продолжает работать независимо. Если она упадёт с ошибкой — вы об этом не узнаете, если не обернёте в `try/except` и не залогируете.
+
+## Типичные ошибки
+
+**Ошибка 1. Забыть `await`.**
+
+```python
+async def send_welcome(message: Message):
+    message.answer("Привет!")  # вернёт корутину, но не выполнит её
+```
+
+Python выдаст предупреждение `coroutine was never awaited`, но код не выполнится. Всегда проверяйте, что перед вызовом асинхронной функции стоит `await`.
+
+**Ошибка 2. Использовать `time.sleep` вместо `asyncio.sleep`.**
+
+Мы уже разобрали это выше, но повторимся — это самая частая ошибка новичков в aiogram. Если бот иногда «зависает» на пару секунд, ищите `time.sleep`.
+
+**Ошибка 3. Запускать долгую задачу через `create_task` без обработки ошибок.**
+
+```python
+asyncio.create_task(might_fail())  # ошибки потеряются
+
+# правильно
+task = asyncio.create_task(might_fail())
+task.add_done_callback(lambda t: t.exception() and logging.error(t.exception()))
+```
+
+**Ошибка 4. Создавать event loop вручную.**
+
+```python
+loop = asyncio.new_event_loop()  # не нужно
+asyncio.set_event_loop(loop)
+loop.run_until_complete(main())
+
+# правильно
+asyncio.run(main())
+```
+
+В aiogram вы вообще не должны управлять loop'ом вручную — фреймворк делает это за вас в `dp.start_polling()`.
+
+## Когда асинхронности недостаточно
+
+Иногда задача настолько тяжёлая (обработка видео, обучение модели), что её нельзя выполнить даже в отдельном потоке — она съест все ресурсы. В таких случаях используют **отдельные воркеры**: бот кладёт задачу в очередь (Redis, RabbitMQ, Celery), а отдельный процесс её обрабатывает. Бот при этом остаётся отзывчивым.
+
+Это выходит за рамки курса, но полезно знать, что такой вариант существует.
+
+## Совет
+
+Если сомневаетесь, блокирует ли какая-то функция event loop — оберните её в `asyncio.to_thread()`. Это почти всегда безопасно (кроме случаев, когда функция сама использует event loop), и вы точно не заблокируете бота. Накладные расходы на создание потока минимальны по сравнению с зависшим ботом.
