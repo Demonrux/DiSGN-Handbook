@@ -1,7 +1,7 @@
 # 2. Асинхронность и asyncio
 
 <div align="center" >
-    <img width="610" height="254" alt="image" src="https://github.com/user-attachments/assets/dc3c9b0c-10ea-4388-9b45-eeafda4c2f48" />
+    <img width="400" height="200" alt="image" src="https://github.com/user-attachments/assets/dc3c9b0c-10ea-4388-9b45-eeafda4c2f48" />
 </div>
 
 Бот постоянно ждёт: сообщений от пользователей, ответов от базы, ответов от Telegram. Если бы он ждал каждого ответа последовательно, то, пока один пользователь скачивает файл, все остальные висели бы в очереди. Асинхронность решает эту проблему.
