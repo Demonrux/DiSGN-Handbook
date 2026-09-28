@@ -385,12 +385,13 @@ FSM требует `FSMContext`. Его тоже можно создать вр�
 
 ```python
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.base import StorageKey
+from aiogram.fsm.storage.memory import MemoryStorage
 
 async def test_registration_flow():
     storage = MemoryStorage()
-    state = FSMContext(storage=storage, key=StorageKey(bot_id=1, chat_id=1, user_id=1))
+    key = StorageKey(bot_id=1, chat_id=1, user_id=1)
+    state = FSMContext(storage=storage, key=key)
 
     # ... вызываете хендлеры, передавая state ...
     # и проверяете, что состояние и данные меняются как надо
@@ -399,6 +400,9 @@ async def test_registration_flow():
 Но проще через `feed_raw_update` — если FSM-хранилище подключено к диспетчеру, `state` создаётся автоматически. Проверить состояние после обработки можно напрямую через хранилище:
 
 ```python
+from aiogram.fsm.storage.base import StorageKey
+from aiogram.fsm.storage.memory import MemoryStorage
+
 async def test_state_after_command(bot, dp, make_update):
     storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
