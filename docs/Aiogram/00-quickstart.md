@@ -144,6 +144,10 @@ async def main():
     logging.basicConfig(level=logging.INFO)
 
     bot = Bot(token=BOT_TOKEN)
+    # Сбрасываем накопившиеся апдейты — иначе при рестарте
+    # бот обработает все сообщения, отправленные пока он был выключен.
+    # При первом запуске это особенно заметно.
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 
