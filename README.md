@@ -23,7 +23,7 @@
 - <img src="https://img.shields.io/badge/Git-F05032?style=flat&logo=git&logoColor=white" height="16" /> [Соглашение о коммитах](docs/Git/02-conventional-commits.md)
 - <img src="https://img.shields.io/badge/C-A8B9CC?style=flat&logo=c&logoColor=white" height="16" />  [Программирование на языке Си](docs/C/README.md)
 - ![Algorithms](https://img.shields.io/badge/Algorithms-4B8BBE?style=flat&logo=thealgorithms&logoColor=white) [Алгоритмы и структуры данных](docs/Algorithms/README.md)
-- <img src="https://img.shields.io/badge/aiogram-2AABEE?style=flat&logo=telegram&logoColor=white" height="16" /> [Разработка Telegram-ботов](docs/aiogram/README.md)
+- <img src="https://img.shields.io/badge/aiogram-2AABEE?style=flat&logo=telegram&logoColor=white" height="16" /> [Разработка Telegram-ботов](docs/Aiogram/README.md)
 
 ## Задания
 - [Добавь себя в команду](assignments/task-01-git.md) — твой первый Pull Request.
