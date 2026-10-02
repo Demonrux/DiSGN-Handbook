@@ -57,6 +57,15 @@ Mermaid решает всё это: диаграмма — это **текст**
 
 ### Минимальный пример
 
+```text
+flowchart LR
+  A[Начало] --> B{Есть данные?}
+  B -->|да| C[Обработка]
+  B -->|нет| D[Ошибка]
+  C --> E[Конец]
+  D --> E
+```
+
 ```mermaid
 flowchart LR
   A[Начало] --> B{Есть данные?}
@@ -76,6 +85,15 @@ flowchart LR
 
 ### Базовый синтаксис
 
+```text
+flowchart TD
+  A[Начало] --> B{Условие}
+  B -->|Да| C[Действие 1]
+  B -->|Нет| D[Действие 2]
+  C --> E[Конец]
+  D --> E
+```
+
 ```mermaid
 flowchart TD
   A[Начало] --> B{Условие}
@@ -93,6 +111,12 @@ flowchart TD
 
 ### Типы узлов
 
+```text
+flowchart LR
+  A[Прямоугольник] --> B(Скруглённый) --> C([Овал]) --> D{Ромб}
+  D --> E((Круг)) --> F>Флажок] --> G{{Шестиугольник}}
+```
+
 ```mermaid
 flowchart LR
   A[Прямоугольник] --> B(Скруглённый) --> C([Овал]) --> D{Ромб}
@@ -102,6 +126,17 @@ flowchart LR
 ### Подграфы
 
 Удобно для группировки этапов:
+
+```text
+flowchart TB
+  subgraph Установка
+    A[Скачать пакет] --> B[Установить]
+  end
+  subgraph Настройка
+    B --> C[Системные настройки]
+    C --> D[Права доступа]
+  end
+```
 
 ```mermaid
 flowchart TB
@@ -117,6 +152,15 @@ flowchart TB
 ### Стилизация узлов
 
 Можно задавать цвета и стили:
+
+```text
+flowchart LR
+  A[Начало]:::green --> B{Проверка}:::orange
+  B -->|Да| C[ОК]:::blue
+  classDef green fill:#9f6,stroke:#333,stroke-width:2px
+  classDef orange fill:#f96,stroke:#333,stroke-width:2px
+  classDef blue fill:#6cf,stroke:#333,stroke-width:2px
+```
 
 ```mermaid
 flowchart LR
@@ -136,6 +180,18 @@ flowchart LR
 Для сценариев «кто кого вызывает»: API-запросы, очереди, плагины.
 
 ### Базовый пример
+
+```text
+sequenceDiagram
+  participant П as Пользователь
+  participant С as Сайт
+  participant А as API
+  П->>С: Открывает форму
+  С->>А: Запрос данных
+  А-->>С: JSON
+  С-->>П: Страница с данными
+```
+
 
 ```mermaid
 sequenceDiagram
@@ -159,6 +215,20 @@ sequenceDiagram
 
 ### Циклы и условия
 
+```text
+sequenceDiagram
+  participant Клиент
+  participant Сервер
+  loop Каждую минуту
+    Клиент->>Сервер: ping
+  end
+  alt Успех
+    Сервер-->>Клиент: pong
+  else Ошибка
+    Сервер-->>Клиент: timeout
+  end
+```
+
 ```mermaid
 sequenceDiagram
   participant Клиент
@@ -174,6 +244,16 @@ sequenceDiagram
 ```
 
 ### Примечания
+
+```text
+sequenceDiagram
+  participant А as Алиса
+  participant Б as Боб
+  Note over А,Б: Оба онлайн
+  А->>Б: Привет!
+  Note right of Б: Боб читает сообщение
+  Б-->>А: Привет!
+```
 
 ```mermaid
 sequenceDiagram
@@ -191,6 +271,14 @@ sequenceDiagram
 
 Жизненный цикл заказа, статус задачи, состояния системы.
 
+```text
+stateDiagram-v2
+  [*] --> Черновик
+  Черновик --> Опубликован: публикация
+  Опубликован --> Архив: снятие с витрины
+  Архив --> [*]
+```
+
 ```mermaid
 stateDiagram-v2
   [*] --> Черновик
@@ -204,6 +292,17 @@ stateDiagram-v2
 - `: подпись` — событие, вызывающее переход.
 
 ### Составные состояния
+
+```text
+stateDiagram-v2
+  [*] --> Active
+  state Active {
+    [*] --> NumLockOff
+    NumLockOff --> NumLockOn: Нажатие NumLock
+    NumLockOn --> NumLockOff: Нажатие NumLock
+  }
+  Active --> [*]
+```
 
 ```mermaid
 stateDiagram-v2
@@ -223,6 +322,20 @@ stateDiagram-v2
 Моделирование объектно-ориентированных систем: классы, атрибуты, методы, связи.
 
 ### Базовый пример
+
+```text
+classDiagram
+  class Заказ {
+    +int id
+    +float total
+    +addItem()
+  }
+  class Позиция {
+    +int count
+    +getPrice()
+  }
+  Заказ "1" --> "*" Позиция : содержит
+```
 
 ```mermaid
 classDiagram
@@ -256,6 +369,25 @@ classDiagram
 
 ### Пример с наследованием
 
+```text
+classDiagram
+  Animal <|-- Duck
+  Animal <|-- Fish
+  Animal <|-- Zebra
+  Animal : +int age
+  Animal : +String gender
+  Animal: +isMammal()
+  class Duck{
+    +String beakColor
+    +swim()
+    +quack()
+  }
+  class Fish{
+    -int sizeInFeet
+    -canEat()
+  }
+```
+
 ```mermaid
 classDiagram
   Animal <|-- Duck
@@ -277,6 +409,19 @@ classDiagram
 
 ### Примечания и интерфейсы
 
+```text
+classDiagram
+  class Payment {
+    <<interface>>
+    +authorise() bool
+  }
+  class CreditCard {
+    +String number
+  }
+  Payment <|.. CreditCard
+  note for CreditCard "Данные карты зашифрованы"
+```
+
 ```mermaid
 classDiagram
   class Payment {
@@ -295,6 +440,24 @@ classDiagram
 ## 7. ER-диаграммы
 
 Схемы баз данных: сущности, атрибуты, связи.
+
+```text
+erDiagram
+  CUSTOMER ||--o{ ORDER : places
+  ORDER ||--|{ LINE_ITEM : contains
+  CUSTOMER {
+    string name
+    string email
+  }
+  ORDER {
+    int id
+    date created
+  }
+  LINE_ITEM {
+    int quantity
+    float price
+  }
+```
 
 ```mermaid
 erDiagram
@@ -326,6 +489,21 @@ erDiagram
 
 Планирование проектов: задачи, сроки, зависимости.
 
+```text
+gantt
+  title План разработки
+  dateFormat YYYY-MM-DD
+  excludes 2026-01-01, 2026-01-07
+  section Проектирование
+    Сбор требований :a1, 2026-01-05, 5d
+    Архитектура :after a1, 3d
+  section Разработка
+    Бэкенд :2026-01-15, 10d
+    Фронтенд :2026-01-20, 8d
+  section Тестирование
+    QA :2026-02-01, 5d
+```
+
 ```mermaid
 gantt
   title План разработки
@@ -352,6 +530,13 @@ gantt
 
 Доли в процентах, подписи через двоеточие.
 
+```text
+pie title Источники трафика
+  "Поиск" : 45
+  "Прямые" : 30
+  "Соцсети" : 25
+```
+
 ```mermaid
 pie title Источники трафика
   "Поиск" : 45
@@ -360,6 +545,13 @@ pie title Источники трафика
 ```
 
 Можно добавить `showData` для отображения значений:
+
+```text
+pie showData title Продажи по регионам
+  "Север" : 120
+  "Юг" : 80
+  "Запад" : 60
+```
 
 ```mermaid
 pie showData title Продажи по регионам
@@ -373,6 +565,18 @@ pie showData title Продажи по регионам
 ## 10. Git-граф (Git Graph)
 
 Визуализация ветвления и истории коммитов.
+
+```text
+gitGraph
+  commit id: "init"
+  branch develop
+  checkout develop
+  commit id: "feat-1"
+  commit id: "feat-2"
+  checkout main
+  merge develop
+  commit id: "release"
+```
 
 ```mermaid
 gitGraph
@@ -396,6 +600,20 @@ gitGraph
 ## 11. Диаграмма пользовательского пути (Journey)
 
 Описывает шаги пользователя при выполнении задачи.
+
+```text
+journey
+  title Рабочий день
+  section Дорога на работу
+    Проснуться: 1: Я, Собака
+    Принять душ: 2: Я
+    Выпить кофе: 4: Я
+  section Работа
+    Писать код: 5: Я
+    Созвон: 3: Я, Коллеги
+  section Домой
+    Ужин: 5: Я, Семья
+```
 
 ```mermaid
 journey
@@ -450,6 +668,17 @@ Mermaid имеет несколько готовых тем:
 
 В VitePress можно задать тему для конкретной диаграммы:
 
+````text
+```mermaid
+---
+config:
+  theme: dark
+---
+flowchart LR
+  A --> B
+```
+````
+
 ````markdown
 ```mermaid
 ---
@@ -463,6 +692,15 @@ flowchart LR
 
 Или через контейнер плагина:
 
+```text
+:::mermaid
+config:
+  theme: dark
+sequenceDiagram
+  A->>B: Привет
+:::
+```
+
 ```markdown
 :::mermaid
 config:
@@ -473,6 +711,21 @@ sequenceDiagram
 ```
 
 ### Кастомизация на основе `base`
+
+````text
+```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#ff6b6b"
+    primaryTextColor: "#fff"
+    lineColor: "#333"
+---
+flowchart LR
+  A[Старт] --> B[Финиш]
+```
+````
 
 ````markdown
 ```mermaid
